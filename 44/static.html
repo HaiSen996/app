@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenBeat - 音乐播放器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            color: #FFFFFF;
+            overflow: hidden;
+        }
+
+        #app {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 80px;
+        }
+
+        /* 首页样式 */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .header {
+            padding: 24px 16px;
+        }
+
+        .greeting {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            color: #B3B3B3;
+            font-size: 16px;
+        }
+
+        .section {
+            padding: 0 16px 24px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .see-all {
+            color: #1DB954;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .horizontal-scroll {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .card {
+            background: #121212;
+            border-radius: 12px;
+            overflow: hidden;
+            min-width: 160px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+        }
+
+        .card-img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+        }
+
+        .card-info {
+            padding: 12px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-artist {
+            color: #B3B3B3;
+            font-size: 12px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        /* 歌曲列表项 */
+        .song-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: #121212;
+            border-bottom: 1px solid #282828;
+            cursor: pointer;
+        }
+
+        .song-item:hover {
+            background: #1a1a1a;
+        }
+
+        .song-index {
+            width: 24px;
+            text-align: center;
+            color: #B3B3B3;
+            font-size: 14px;
+            margin-right: 12px;
+        }
+
+        .song-cover {
+            width: 44px;
+            height: 44px;
+            border-radius: 4px;
+            margin-right: 12px;
+            object-fit: cover;
+        }
+
+        .song-info {
+            flex: 1;
+        }
+
+        .song-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .song-artist {
+            color: #B3B3B3;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .song-duration {
+            color: #B3B3B3;
+            font-size: 12px;
+        }
+
+        /* 播放器样式 */
+        .player-page {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .player-cover {
+            width: 280px;
+            height: 280px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+        }
+
+        .player-info {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .player-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .player-artist {
+            color: #B3B3B3;
+            font-size: 16px;
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 24px;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #282828;
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #1DB954;
+            border-radius: 2px;
+            width: 30%;
+        }
+
+        .progress-time {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #B3B3B3;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .play-btn {
+            width: 64px;
+            height: 64px;
+            background: white;
+            color: black;
+            border-radius: 50%;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn.active {
+            color: #1DB954;
+        }
+
+        .favorite-btn {
+            margin-top: 24px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .favorite-btn.active {
+            color: #1DB954;
+        }
+
+        /* 搜索页样式 */
+        .search-input {
+            width: 100%;
+            background: #121212;
+            border: none;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 30px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .search-input::placeholder {
+            color: #B3B3B3;
+        }
+
+        .genres {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .genre-tag {
+            background: #121212;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid #282828;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .genre-tag:hover {
+            border-color: #1DB954;
+        }
+
+        /* 音乐库样式 */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: #121212;
+            padding: 24px;
+            border-radius: 12px;
+            margin: 0 16px 24px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            color: #B3B3B3;
+            font-size: 12px;
+        }
+
+        /* 个人中心样式 */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            background: #1DB954;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: black;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .action-card {
+            background: #121212;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .action-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .action-title {
+            font-size: 12px;
+        }
+
+        .action-count {
+            color: #B3B3B3;
+            font-size: 10px;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: #121212;
+            border-bottom: 1px solid #282828;
+            cursor: pointer;
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #121212;
+            border-top: 1px solid #282828;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            color: #B3B3B3;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: #1DB954;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* 播放列表详情页 */
+        .playlist-detail {
+            display: none;
+        }
+
+        .playlist-detail.active {
+            display: block;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 16px;
+        }
+
+        .playlist-header {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .playlist-cover-large {
+            width: 256px;
+            height: 256px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+        }
+
+        .playlist-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .playlist-desc {
+            color: #B3B3B3;
+            margin-bottom: 8px;
+        }
+
+        .playlist-meta {
+            color: #B3B3B3;
+            font-size: 14px;
+        }
+
+        .playlist-actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .shuffle-btn {
+            background: #1DB954;
+            color: black;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .circle-btn {
+            width: 44px;
+            height: 44px;
+            background: #121212;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        /* 迷你播放器 */
+        .mini-player {
+            position: fixed;
+            bottom: 64px;
+            left: 8px;
+            right: 8px;
+            background: linear-gradient(135deg, #1DB954 0%, #1a7d40 100%);
+            border-radius: 12px;
+            padding: 12px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 99;
+        }
+
+        .mini-player.active {
+            display: flex;
+        }
+
+        .mini-cover {
+            width: 44px;
+            height: 44px;
+            border-radius: 4px;
+        }
+
+        .mini-info {
+            flex: 1;
+        }
+
+        .mini-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .mini-artist {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .mini-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mini-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="main-content" id="content">
+            <!-- 首页 -->
+            <div id="page-home" class="page active">
+                <div class="header">
+                    <div class="greeting" id="greeting-text">早上好</div>
+                    <div class="subtitle">今天想听点什么？</div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title">当前趋势</div>
+                        <div class="see-all">查看全部</div>
+                    </div>
+                    <div class="horizontal-scroll" id="trending-playlists"></div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title">推荐给你</div>
+                        <div class="see-all">查看全部</div>
+                    </div>
+                    <div class="horizontal-scroll" id="recommended-playlists"></div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">热门歌曲</div>
+                    <div class="grid" id="songs-grid"></div>
+                </div>
+            </div>
+
+            <!-- 搜索页 -->
+            <div id="page-search" class="page">
+                <div class="header">
+                    <div class="section-title">搜索</div>
+                </div>
+                <div class="section">
+                    <input type="text" class="search-input" placeholder="想听点什么？">
+                    <div class="genres" id="genres"></div>
+                    <div class="section-title">浏览全部</div>
+                    <div class="grid" id="search-playlists"></div>
+                </div>
+            </div>
+
+            <!-- 音乐库页 -->
+            <div id="page-library" class="page">
+                <div class="header">
+                    <div class="section-title">音乐库</div>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-number">8</div>
+                        <div class="stat-label">歌单</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24</div>
+                        <div class="stat-label">收藏</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">12</div>
+                        <div class="stat-label">下载</div>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title">我的歌单</div>
+                        <div class="see-all">查看全部</div>
+                    </div>
+                    <div class="horizontal-scroll" id="library-playlists"></div>
+                </div>
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title">最近播放</div>
+                        <div class="see-all">查看全部</div>
+                    </div>
+                    <div id="recent-songs"></div>
+                </div>
+            </div>
+
+            <!-- 播放器页 -->
+            <div id="page-player" class="page">
+                <div class="player-page">
+                    <img class="player-cover" id="player-cover" src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop">
+                    <div class="player-info">
+                        <div class="player-title" id="player-title">Midnight City</div>
+                        <div class="player-artist" id="player-artist">M83</div>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-time">
+                            <span id="current-time">1:23</span>
+                            <span id="total-time">4:03</span>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <button class="control-btn" id="shuffle-btn">🔀</button>
+                        <button class="control-btn" id="prev-btn">⏮️</button>
+                        <button class="play-btn" id="play-btn">▶️</button>
+                        <button class="control-btn" id="next-btn">⏭️</button>
+                        <button class="control-btn" id="repeat-btn">🔁</button>
+                    </div>
+                    <button class="favorite-btn" id="favorite-btn">🤍</button>
+                </div>
+            </div>
+
+            <!-- 个人中心页 -->
+            <div id="page-profile" class="page">
+                <div class="header">
+                    <div class="profile-header">
+                        <div class="profile-avatar">A</div>
+                        <div>
+                            <div class="section-title">Alex</div>
+                            <div style="color: #B3B3B3; font-size: 14px;">alex@example.com</div>
+                        </div>
+                        <button style="background: transparent; border: 1px solid #282828; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">编辑资料</button>
+                    </div>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-number">128</div>
+                        <div class="stat-label">关注</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">5.2K</div>
+                        <div class="stat-label">粉丝</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24</div>
+                        <div class="stat-label">收藏</div>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="section-title">快捷操作</div>
+                    <div class="quick-actions">
+                        <div class="action-card">
+                            <div class="action-icon">📁</div>
+                            <div class="action-title">我的歌单</div>
+                            <div class="action-count">8</div>
+                        </div>
+                        <div class="action-card">
+                            <div class="action-icon">❤️</div>
+                            <div class="action-title">收藏</div>
+                            <div class="action-count">24</div>
+                        </div>
+                        <div class="action-card">
+                            <div class="action-icon">📥</div>
+                            <div class="action-title">下载</div>
+                            <div class="action-count">12</div>
+                        </div>
+                        <div class="action-card">
+                            <div class="action-icon">🎤</div>
+                            <div class="action-title">播客</div>
+                            <div class="action-count">5</div>
+                        </div>
+                        <div class="action-card">
+                            <div class="action-icon">🎧</div>
+                            <div class="action-title">电台</div>
+                            <div class="action-count">10</div>
+                        </div>
+                        <div class="action-card">
+                            <div class="action-icon">🎬</div>
+                            <div class="action-title">MV</div>
+                            <div class="action-count">3</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="section-title">设置</div>
+                    <div>
+                        <div class="settings-item">
+                            <span>账户设置</span>
+                            <span>→</span>
+                        </div>
+                        <div class="settings-item">
+                            <span>隐私设置</span>
+                            <span>→</span>
+                        </div>
+                        <div class="settings-item">
+                            <span>通知设置</span>
+                            <span>→</span>
+                        </div>
+                        <div class="settings-item">
+                            <span>数据与缓存</span>
+                            <span>→</span>
+                        </div>
+                        <div class="settings-item">
+                            <span>关于 GreenBeat</span>
+                            <span>→</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 播放列表详情页 -->
+            <div id="page-playlist" class="playlist-detail">
+                <button class="back-btn" onclick="closePlaylistDetail()">←</button>
+                <div class="playlist-header">
+                    <img class="playlist-cover-large" id="detail-cover" src="">
+                    <div class="playlist-name" id="detail-name">歌单名称</div>
+                    <div class="playlist-desc" id="detail-desc">歌单描述</div>
+                    <div class="playlist-meta" id="detail-meta">GreenBeat 精选 · 1.2万听众 · 8首歌曲</div>
+                </div>
+                <div class="playlist-actions">
+                    <button class="shuffle-btn" onclick="shufflePlay()">▶️ 随机播放</button>
+                    <button class="circle-btn">❤️</button>
+                    <button class="circle-btn">⬇️</button>
+                    <button class="circle-btn">⋯</button>
+                </div>
+                <div id="detail-songs"></div>
+            </div>
+        </div>
+
+        <!-- 迷你播放器 -->
+        <div class="mini-player" id="mini-player">
+            <img class="mini-cover" id="mini-cover" src="">
+            <div class="mini-info">
+                <div class="mini-title" id="mini-title">歌曲名称</div>
+                <div class="mini-artist" id="mini-artist">歌手</div>
+            </div>
+            <div class="mini-controls">
+                <button class="mini-btn" id="mini-play-btn">▶️</button>
+                <button class="mini-btn" onclick="switchToPage('player')">📱</button>
+            </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="switchToPage('home')">
+                <div class="nav-icon">🏠</div>
+                <div class="nav-label">首页</div>
+            </div>
+            <div class="nav-item" onclick="switchToPage('search')">
+                <div class="nav-icon">🔍</div>
+                <div class="nav-label">搜索</div>
+            </div>
+            <div class="nav-item" onclick="switchToPage('library')">
+                <div class="nav-icon">📚</div>
+                <div class="nav-label">音乐库</div>
+            </div>
+            <div class="nav-item" onclick="switchToPage('player')">
+                <div class="nav-icon">▶️</div>
+                <div class="nav-label">播放器</div>
+            </div>
+            <div class="nav-item" onclick="switchToPage('profile')">
+                <div class="nav-icon">👤</div>
+                <div class="nav-label">我的</div>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        // 模拟数据
+        const songs = [
+            { id: 1, title: "Midnight City", artist: "M83", album: "Hurry Up", duration: "4:03", cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop" },
+            { id: 2, title: "Starboy", artist: "The Weeknd", album: "Starboy", duration: "3:50", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop" },
+            { id: 3, title: "Heat Waves", artist: "Glass Animals", album: "Dreamland", duration: "3:58", cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&h=400&fit=crop" },
+            { id: 4, title: "Let It Happen", artist: "Tame Impala", album: "Currents", duration: "7:46", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop" },
+            { id: 5, title: "Electric Feel", artist: "MGMT", album: "Oracular", duration: "3:49", cover: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=400&h=400&fit=crop" },
+            { id: 6, title: "Instant Crush", artist: "Daft Punk", album: "Random Access", duration: "5:37", cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop" }
+        ];
+
+        const playlists = [
+            { id: 1, title: "今日最爱独立乐", description: "当下最具活力的独立流行与电子音乐", author: "GreenBeat 精选", listeners: "1.2万", songs: songs.slice(0, 4), cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&h=400&fit=crop" },
+            { id: 2, title: "电子舞曲精选", description: "最热门的 EDM 歌曲", author: "DJ Station", listeners: "89万", songs: songs.slice(0, 3), cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop" },
+            { id: 3, title: "深夜电台", description: "适合夜晚聆听的音乐", author: "Night Radio", listeners: "56万", songs: songs.slice(4, 6), cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop" },
+            { id: 4, title: "晨间咖啡", description: "开启美好一天的背景音乐", author: "Morning Mix", listeners: "45万", songs: songs.slice(2, 5), cover: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=400&h=400&fit=crop" }
+        ];
+
+        const genres = ["流行", "摇滚", "爵士", "嘻哈", "电子", "古典", "民谣"];
+
+        let state = {
+            currentPage: 'home',
+            currentSong: songs[0],
+            isPlaying: false,
+            isShuffled: false,
+            repeatMode: 'off',
+            favorites: [1],
+            progress: 30,
+            currentPlaylist: null
+        };
+
+        // 更新问候语
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let text = '晚上好';
+            if (hour < 12) text = '早上好';
+            else if (hour < 18) text = '下午好';
+            document.getElementById('greeting-text').textContent = text;
+        }
+
+        // 渲染歌单卡片
+        function renderPlaylistCard(playlist, showAuthor = true) {
+            return `
+                <div class="card" onclick="openPlaylistDetail(${playlist.id})">
+                    <img class="card-img" src="${playlist.cover}" alt="${playlist.title}">
+                    <div class="card-info">
+                        <div class="card-title">${playlist.title}</div>
+                        ${showAuthor ? `<div class="card-artist">${playlist.author}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染歌曲卡片
+        function renderSongCard(song) {
+            return `
+                <div class="card" onclick="playSong(${song.id})">
+                    <img class="card-img" src="${song.cover}" alt="${song.title}">
+                    <div class="card-info">
+                        <div class="card-title">${song.title}</div>
+                        <div class="card-artist">${song.artist}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染歌曲列表项
+        function renderSongItem(song, index) {
+            return `
+                <div class="song-item" onclick="playSong(${song.id})">
+                    <div class="song-index">${index + 1}</div>
+                    <img class="song-cover" src="${song.cover}" alt="${song.title}">
+                    <div class="song-info">
+                        <div class="song-name">${song.title}</div>
+                        <div class="song-artist">${song.artist}</div>
+                    </div>
+                    <div class="song-duration">${song.duration}</div>
+                </div>
+            `;
+        }
+
+        // 初始化页面
+        function init() {
+            updateGreeting();
+            
+            document.getElementById('trending-playlists').innerHTML = playlists.map(renderPlaylistCard).join('');
+            document.getElementById('recommended-playlists').innerHTML = playlists.map(renderPlaylistCard).join('');
+            document.getElementById('library-playlists').innerHTML = playlists.map(renderPlaylistCard).join('');
+            document.getElementById('search-playlists').innerHTML = playlists.map(renderPlaylistCard).join('');
+            document.getElementById('songs-grid').innerHTML = songs.slice(0, 6).map(renderSongCard).join('');
+            document.getElementById('recent-songs').innerHTML = songs.slice(0, 5).map((s, i) => renderSongItem(s, i)).join('');
+            document.getElementById('genres').innerHTML = genres.map(g => `<div class="genre-tag">${g}</div>`).join('');
+            
+            updatePlayerUI();
+        }
+
+        // 切换页面
+        function switchToPage(page) {
+            state.currentPage = page;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${page}`).classList.add('active');
+            document.getElementById('page-playlist').classList.remove('active');
+            
+            document.querySelectorAll('.nav-item').forEach((item, index) => {
+                const pages = ['home', 'search', 'library', 'player', 'profile'];
+                item.classList.toggle('active', pages[index] === page);
+            });
+        }
+
+        // 播放歌曲
+        function playSong(id) {
+            const song = songs.find(s => s.id === id);
+            if (song) {
+                state.currentSong = song;
+                state.isPlaying = true;
+                state.progress = 0;
+                updatePlayerUI();
+                updateMiniPlayer();
+                switchToPage('player');
+            }
+        }
+
+        // 打开歌单详情
+        function openPlaylistDetail(id) {
+            const playlist = playlists.find(p => p.id === id);
+            if (playlist) {
+                state.currentPlaylist = playlist;
+                document.getElementById('detail-cover').src = playlist.cover;
+                document.getElementById('detail-name').textContent = playlist.title;
+                document.getElementById('detail-desc').textContent = playlist.description;
+                document.getElementById('detail-meta').textContent = `${playlist.author} · ${playlist.listeners}听众 · ${playlist.songs.length}首歌曲`;
+                document.getElementById('detail-songs').innerHTML = playlist.songs.map((s, i) => renderSongItem(s, i)).join('');
+                
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById('page-playlist').classList.add('active');
+            }
+        }
+
+        // 关闭歌单详情
+        function closePlaylistDetail() {
+            document.getElementById('page-playlist').classList.remove('active');
+            switchToPage('home');
+        }
+
+        // 随机播放
+        function shufflePlay() {
+            if (state.currentPlaylist && state.currentPlaylist.songs.length > 0) {
+                const randomIndex = Math.floor(Math.random() * state.currentPlaylist.songs.length);
+                playSong(state.currentPlaylist.songs[randomIndex].id);
+            }
+        }
+
+        // 更新播放器UI
+        function updatePlayerUI() {
+            const song = state.currentSong;
+            document.getElementById('player-cover').src = song.cover;
+            document.getElementById('player-title').textContent = song.title;
+            document.getElementById('player-artist').textContent = song.artist;
+            document.getElementById('play-btn').textContent = state.isPlaying ? '⏸️' : '▶️';
+            document.getElementById('total-time').textContent = song.duration;
+            document.getElementById('favorite-btn').textContent = state.favorites.includes(song.id) ? '❤️' : '🤍';
+            document.getElementById('favorite-btn').classList.toggle('active', state.favorites.includes(song.id));
+            
+            const progressPercent = state.progress;
+            document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+            
+            const currentSec = Math.floor((progressPercent / 100) * 243);
+            const mins = Math.floor(currentSec / 60);
+            const secs = (currentSec % 60).toString().padStart(2, '0');
+            document.getElementById('current-time').textContent = `${mins}:${secs}`;
+        }
+
+        // 更新迷你播放器
+        function updateMiniPlayer() {
+            const song = state.currentSong;
+            document.getElementById('mini-player').classList.add('active');
+            document.getElementById('mini-cover').src = song.cover;
+            document.getElementById('mini-title').textContent = song.title;
+            document.getElementById('mini-artist').textContent = song.artist;
+            document.getElementById('mini-play-btn').textContent = state.isPlaying ? '⏸️' : '▶️';
+        }
+
+        // 播放控制
+        document.getElementById('play-btn').onclick = function() {
+            state.isPlaying = !state.isPlaying;
+            updatePlayerUI();
+            updateMiniPlayer();
+        };
+
+        document.getElementById('mini-play-btn').onclick = function() {
+            state.isPlaying = !state.isPlaying;
+            updatePlayerUI();
+            updateMiniPlayer();
+        };
+
+        document.getElementById('prev-btn').onclick = function() {
+            const currentIndex = songs.findIndex(s => s.id === state.currentSong.id);
+            const prevIndex = currentIndex > 0 ? currentIndex - 1 : songs.length - 1;
+            playSong(songs[prevIndex].id);
+        };
+
+        document.getElementById('next-btn').onclick = function() {
+            const currentIndex = songs.findIndex(s => s.id === state.currentSong.id);
+            const nextIndex = currentIndex < songs.length - 1 ? currentIndex + 1 : 0;
+            playSong(songs[nextIndex].id);
+        };
+
+        document.getElementById('shuffle-btn').onclick = function() {
+            state.isShuffled = !state.isShuffled;
+            this.classList.toggle('active', state.isShuffled);
+        };
+
+        document.getElementById('repeat-btn').onclick = function() {
+            const modes = ['off', 'all', 'one'];
+            const currentIndex = modes.indexOf(state.repeatMode);
+            state.repeatMode = modes[(currentIndex + 1) % modes.length];
+            this.classList.toggle('active', state.repeatMode !== 'off');
+        };
+
+        document.getElementById('favorite-btn').onclick = function() {
+            const songId = state.currentSong.id;
+            if (state.favorites.includes(songId)) {
+                state.favorites = state.favorites.filter(id => id !== songId);
+            } else {
+                state.favorites.push(songId);
+            }
+            updatePlayerUI();
+        };
+
+        // 进度条
+        document.getElementById('progress-bar').onclick = function(e) {
+            const rect = this.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width * 100;
+            state.progress = Math.max(0, Math.min(100, percent));
+            updatePlayerUI();
+        };
+
+        // 模拟进度条
+        setInterval(() => {
+            if (state.isPlaying) {
+                state.progress += 0.5;
+                if (state.progress >= 100) {
+                    state.progress = 0;
+                    document.getElementById('next-btn').click();
+                }
+                updatePlayerUI();
+            }
+        }, 500);
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
